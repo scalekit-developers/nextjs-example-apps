@@ -32,7 +32,7 @@ This Next.js application demonstrates how to implement Single Sign-On (SSO) for 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/saif-at-scalekit/cognito-scalekit.git
+git clone https://github.com/scalekit-developers/nextjs-example-apps.git
 cd cognito-scalekit
 ```
 
