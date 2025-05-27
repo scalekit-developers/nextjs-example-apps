@@ -35,6 +35,19 @@ This example showcases the full stack authentication capabilities of ScaleKit, i
 - Session handling
 - Secure user identity management
 
+### 3. AWS Cognito with Scalekit SSO Integration
+
+This example demonstrates how to implement Single Sign-On (SSO) for enterprise users by integrating AWS Cognito with Scalekit using the OpenID Connect (OIDC) protocol.
+
+**Key Features:**
+
+- AWS Cognito authentication
+- Enterprise SSO via Scalekit integration
+- Secure session management with Iron Session
+- User profile information display
+- Protected routes with middleware
+- Responsive UI with Tailwind CSS
+
 ## Getting Started
 
 ### Prerequisites
