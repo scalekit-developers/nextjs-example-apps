@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
 
     // If we have an auth URL, redirect to it
     if (authUrl) {
-      console.log('Redirecting to authorization URL');
       return NextResponse.redirect(authUrl);
     }
 
@@ -53,17 +52,14 @@ async function getAuthUrl(
       connectionId?: string;
       organizationId?: string;
       prompt?: string;
+      responseType?: string;
     } = {
       scopes: ['offline_access', 'openid', 'profile', 'email'],
+      state,
+      connectionId: connectionId || undefined,
+      organizationId: organizationId || undefined,
+      responseType: 'code', // Explicitly request authorization code flow
     };
-
-    console.log('Generating authorization URL with options:', {
-      redirectUri,
-      scopes: authOptions.scopes,
-      state: !!state,
-      connectionId: !!connectionId,
-      organizationId: !!organizationId,
-    });
 
     // Use the Scalekit SDK to generate the authorization URL
     const authUrl = await scalekit.getAuthorizationUrl(
@@ -71,7 +67,6 @@ async function getAuthUrl(
       authOptions
     );
 
-    console.log('Successfully generated authorization URL:::', authUrl);
     return authUrl;
   } catch (error) {
     console.error('Error generating authorization URL:', error);

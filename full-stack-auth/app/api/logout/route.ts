@@ -10,9 +10,12 @@ import scalekit from '@/app/lib/scalekit';
 export async function GET(request: NextRequest) {
   const idToken = request.cookies.get(ID_TOKEN_COOKIE)?.value || '';
 
-  console.log('Logout initiated');
-  console.log('ID Token present:', !!idToken);
-  console.log('All cookies:', request.cookies.getAll());
+  // ID token is required for proper logout - if missing, just clear cookies and redirect
+  if (!idToken) {
+    const response = NextResponse.redirect(new URL('/', request.url));
+    clearAllAuthCookies(response);
+    return response;
+  }
 
   try {
     // Use ScaleKit SDK to generate logout URL with proper session termination
@@ -21,23 +24,22 @@ export async function GET(request: NextRequest) {
       postLogoutRedirectUri: 'http://localhost:3000/', // Redirect back to home after ScaleKit logout
     });
 
-    console.log('ScaleKit logout URL generated:', logoutUrl);
-
     // Redirect to ScaleKit logout endpoint to invalidate their session
     const scalekitResponse = NextResponse.redirect(logoutUrl);
 
     // Ensure cookies are cleared on this response too
     clearAllAuthCookies(scalekitResponse);
 
-    console.log('Logout completed - redirecting to ScaleKit logout endpoint');
     return scalekitResponse;
-  } catch (error) {
-    console.log('ScaleKit logout failed, falling back to local logout:', error);
-    // Fallback to local logout only - response already prepared above
+  } catch {
+    // Fallback to local logout only
   }
 
-  console.log('Logout completed - cookies cleared, redirecting to home');
-  return response;
+  // Create a fallback response for local logout
+  const fallbackResponse = NextResponse.redirect(new URL('/', request.url));
+  clearAllAuthCookies(fallbackResponse);
+
+  return fallbackResponse;
 }
 
 // Helper function to clear all authentication cookies
@@ -62,6 +64,4 @@ function clearAllAuthCookies(response: NextResponse) {
   // Also clear any session cookies that might be present
   response.cookies.set('session', '', cookieOptions);
   response.cookies.set('session.sig', '', cookieOptions);
-
-  console.log('All authentication cookies cleared');
 }

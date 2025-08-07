@@ -3,11 +3,13 @@ import {
   ACCESS_TOKEN_COOKIE,
   TOKEN_EXPIRY_COOKIE,
   REFRESH_TOKEN_COOKIE,
+  ID_TOKEN_COOKIE,
 } from '@/app/lib/constants';
 import { jwtDecode } from 'jwt-decode';
 
 export async function GET(request: NextRequest) {
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+  const idToken = request.cookies.get(ID_TOKEN_COOKIE)?.value;
   const redirectPath =
     request.nextUrl.searchParams.get('redirect') || '/profile';
 
@@ -67,6 +69,19 @@ export async function GET(request: NextRequest) {
         sameSite: 'lax',
         path: '/',
         expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      });
+    }
+
+    // Preserve the ID token if we have one (it doesn't change during refresh)
+    if (idToken) {
+      response.cookies.set({
+        name: ID_TOKEN_COOKIE,
+        value: idToken,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        expires: new Date(expiryTime), // Use same expiry as access token
       });
     }
 

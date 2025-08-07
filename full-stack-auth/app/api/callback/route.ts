@@ -17,17 +17,8 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get('state') || '';
   const error = searchParams.get('error') || '';
 
-  console.log('Code', code);
-
   // In some OIDC flows, the ID token might be returned directly in the URL
   const idTokenFromUrl = searchParams.get('id_token') || '';
-
-  console.log('Auth callback URL parameters:', {
-    code: !!code,
-    state: !!state,
-    error: !!error,
-    idTokenPresent: !!idTokenFromUrl,
-  });
 
   if (error) {
     console.error('Authentication error:', error);
@@ -41,16 +32,8 @@ export async function GET(request: NextRequest) {
   }
 
   // Use Scalekit SDK to exchange authorization code for tokens
-  console.log('Processing callback with Scalekit SDK...');
   try {
     const authResult = await scalekit.authenticateWithCode(code, redirectUri);
-
-    console.log('Authentication tokens received:', {
-      accessToken: !!authResult?.accessToken,
-      refreshToken: !!authResult?.refreshToken,
-      idToken: !!authResult?.idToken,
-      user: !!authResult?.user,
-    });
 
     if (!authResult || !authResult.accessToken) {
       console.error('Failed to get access token');
@@ -60,12 +43,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Use the ID token from URL if it's available and not in the token response
-    const finalIdToken = authResult.idToken || idTokenFromUrl || '';
-    if (!authResult.idToken && idTokenFromUrl) {
-      console.log('Using ID token from URL instead of token response');
-      // Add the ID token to the result for easier handling
-      authResult.idToken = idTokenFromUrl;
+    // Extract ID token from the expected response structure
+    const idTokenFromResponse = authResult?.idToken || '';
+
+    // Use the ID token from response, URL, or empty string
+    const finalIdToken = idTokenFromResponse || idTokenFromUrl || '';
+
+    // Validate that we have an ID token - it's required for proper logout
+    if (!finalIdToken) {
+      console.error(
+        'Failed to get ID token - required for logout functionality'
+      );
+      return NextResponse.json(
+        { error: 'Failed to get ID token' },
+        { status: 400 }
+      );
     }
 
     // Decode the JWT to get the expiration time
@@ -104,7 +96,6 @@ export async function GET(request: NextRequest) {
     const refreshToken = authResult.refreshToken;
 
     if (refreshToken) {
-      console.log('Setting refresh token cookie');
       // Set the refresh token as a cookie
       response.cookies.set({
         name: REFRESH_TOKEN_COOKIE,
@@ -120,7 +111,6 @@ export async function GET(request: NextRequest) {
 
     // Store the id_token as a cookie if it exists
     if (finalIdToken) {
-      console.log('Setting ID token cookie');
       response.cookies.set({
         name: ID_TOKEN_COOKIE,
         value: finalIdToken,
@@ -131,8 +121,6 @@ export async function GET(request: NextRequest) {
         // Use the same expiration as the access token
         expires: new Date(expiryTime),
       });
-    } else {
-      console.warn('No ID token received from the authentication provider');
     }
 
     return response;
