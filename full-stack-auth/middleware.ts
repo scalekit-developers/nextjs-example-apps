@@ -3,10 +3,8 @@ import type { NextRequest } from 'next/server';
 import {
   ACCESS_TOKEN_COOKIE,
   TOKEN_EXPIRY_COOKIE,
-} from './app/api/callback/route';
-
-// Add this constant
-const REFRESH_TOKEN_COOKIE = 'auth_refresh_token';
+  REFRESH_TOKEN_COOKIE,
+} from './app/lib/constants';
 
 // List of paths that require authentication
 const protectedPaths = ['/profile'];

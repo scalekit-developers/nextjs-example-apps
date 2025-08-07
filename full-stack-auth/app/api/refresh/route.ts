@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ACCESS_TOKEN_COOKIE, TOKEN_EXPIRY_COOKIE } from '../callback/route';
+import { ACCESS_TOKEN_COOKIE, TOKEN_EXPIRY_COOKIE } from '@/app/lib/constants';
 import { jwtDecode } from 'jwt-decode';
 
 // Add this constant
