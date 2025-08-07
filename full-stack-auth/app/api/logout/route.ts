@@ -5,43 +5,90 @@ import {
   REFRESH_TOKEN_COOKIE,
   TOKEN_EXPIRY_COOKIE,
 } from '@/app/lib/constants';
+import scalekit from '@/app/lib/scalekit';
 
 export async function GET(request: NextRequest) {
   const idToken = request.cookies.get(ID_TOKEN_COOKIE)?.value || '';
 
-  console.log('ID Token:', idToken);
+  console.log('Logout initiated');
+  console.log('ID Token present:', !!idToken);
+  console.log('All cookies:', request.cookies.getAll());
 
-  // Ensure the post_logout_redirect_uri is properly encoded
-  const postLogoutRedirectUri = encodeURIComponent('http://localhost:3000/');
-
-  // Only redirect to ScaleKit's logout endpoint if we have an ID token
-  // Otherwise, we must have already initiated the logout process
+  // Try to use ScaleKit's proper logout method if possible
   if (idToken) {
-    // Create a response that redirects to the ScaleKit logout endpoint
-    const logoutUrl = `${process.env.SCALEKIT_ENVIRONMENT_URL}/end_session?id_token_hint=${idToken}&post_logout_redirect_uri=${postLogoutRedirectUri}`;
-    console.log('Redirecting to ScaleKit logout URL:', logoutUrl);
+    try {
+      // Use ScaleKit SDK to generate logout URL
+      const logoutUrl = await scalekit.getLogoutUrl({
+        idTokenHint: idToken,
+        postLogoutRedirectUri: 'http://localhost:3000/',
+      });
 
-    const response = NextResponse.redirect(logoutUrl);
+      console.log('ScaleKit logout URL generated:', logoutUrl);
 
-    // Clear all authentication cookies
-    clearAllAuthCookies(response);
+      // Create response that redirects to ScaleKit logout endpoint
+      const response = NextResponse.redirect(logoutUrl);
 
-    return response;
-  } else {
-    // We've already cleared cookies in a previous invocation
-    // Let the user continue to the home page or wherever they were headed
-    console.log(
-      'Already logged out (no ID token found). Continuing to home page...'
-    );
-    return NextResponse.redirect('http://localhost:3000/');
+      // Clear all authentication cookies
+      clearAllAuthCookies(response);
+
+      console.log('Logout completed - redirecting to ScaleKit logout endpoint');
+      return response;
+    } catch (error) {
+      console.log(
+        'ScaleKit logout failed, falling back to local logout:',
+        error
+      );
+      // Fallback to local logout only
+    }
   }
+
+  // Fallback: Clear local cookies and redirect to home
+  const response = NextResponse.redirect('http://localhost:3000/');
+  clearAllAuthCookies(response);
+
+  console.log('Logout completed - cookies cleared, redirecting to home');
+  return response;
 }
 
 // Helper function to clear all authentication cookies
 function clearAllAuthCookies(response: NextResponse) {
-  response.cookies.delete(ACCESS_TOKEN_COOKIE);
-  response.cookies.delete(TOKEN_EXPIRY_COOKIE);
-  response.cookies.delete(REFRESH_TOKEN_COOKIE);
-  response.cookies.delete(ID_TOKEN_COOKIE);
+  // Set cookies with expired dates to ensure they're deleted
+  // Must match the exact attributes used when setting the cookies
+  response.cookies.set({
+    name: ACCESS_TOKEN_COOKIE,
+    value: '',
+    expires: new Date(0),
+    path: '/',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+  response.cookies.set({
+    name: TOKEN_EXPIRY_COOKIE,
+    value: '',
+    expires: new Date(0),
+    path: '/',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+  response.cookies.set({
+    name: REFRESH_TOKEN_COOKIE,
+    value: '',
+    expires: new Date(0),
+    path: '/',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+  response.cookies.set({
+    name: ID_TOKEN_COOKIE,
+    value: '',
+    expires: new Date(0),
+    path: '/',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
   console.log('All authentication cookies cleared');
 }

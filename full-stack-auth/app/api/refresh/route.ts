@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ACCESS_TOKEN_COOKIE, TOKEN_EXPIRY_COOKIE } from '@/app/lib/constants';
+import {
+  ACCESS_TOKEN_COOKIE,
+  TOKEN_EXPIRY_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+} from '@/app/lib/constants';
 import { jwtDecode } from 'jwt-decode';
-
-// Add this constant
-const REFRESH_TOKEN_COOKIE = 'auth_refresh_token';
 
 export async function GET(request: NextRequest) {
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
