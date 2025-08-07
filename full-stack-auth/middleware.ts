@@ -7,7 +7,7 @@ import {
 } from './app/lib/constants';
 
 // List of paths that require authentication
-const protectedPaths = ['/profile'];
+const protectedPaths = ['/profile', '/invite'];
 
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
