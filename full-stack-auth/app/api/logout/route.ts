@@ -14,37 +14,27 @@ export async function GET(request: NextRequest) {
   console.log('ID Token present:', !!idToken);
   console.log('All cookies:', request.cookies.getAll());
 
-  // Try to use ScaleKit's proper logout method if possible
-  if (idToken) {
-    try {
-      // Use ScaleKit SDK to generate logout URL
-      const logoutUrl = await scalekit.getLogoutUrl({
-        idTokenHint: idToken,
-        postLogoutRedirectUri: 'http://localhost:3000/',
-      });
+  try {
+    // Use ScaleKit SDK to generate logout URL with proper session termination
+    const logoutUrl = await scalekit.getLogoutUrl({
+      idTokenHint: idToken,
+      postLogoutRedirectUri: 'http://localhost:3000/', // Redirect back to home after ScaleKit logout
+    });
 
-      console.log('ScaleKit logout URL generated:', logoutUrl);
+    console.log('ScaleKit logout URL generated:', logoutUrl);
 
-      // Create response that redirects to ScaleKit logout endpoint
-      const response = NextResponse.redirect(logoutUrl);
+    // Redirect to ScaleKit logout endpoint to invalidate their session
+    const scalekitResponse = NextResponse.redirect(logoutUrl);
 
-      // Clear all authentication cookies
-      clearAllAuthCookies(response);
+    // Ensure cookies are cleared on this response too
+    clearAllAuthCookies(scalekitResponse);
 
-      console.log('Logout completed - redirecting to ScaleKit logout endpoint');
-      return response;
-    } catch (error) {
-      console.log(
-        'ScaleKit logout failed, falling back to local logout:',
-        error
-      );
-      // Fallback to local logout only
-    }
+    console.log('Logout completed - redirecting to ScaleKit logout endpoint');
+    return scalekitResponse;
+  } catch (error) {
+    console.log('ScaleKit logout failed, falling back to local logout:', error);
+    // Fallback to local logout only - response already prepared above
   }
-
-  // Fallback: Clear local cookies and redirect to home
-  const response = NextResponse.redirect('http://localhost:3000/');
-  clearAllAuthCookies(response);
 
   console.log('Logout completed - cookies cleared, redirecting to home');
   return response;
@@ -53,42 +43,25 @@ export async function GET(request: NextRequest) {
 // Helper function to clear all authentication cookies
 function clearAllAuthCookies(response: NextResponse) {
   // Set cookies with expired dates to ensure they're deleted
-  // Must match the exact attributes used when setting the cookies
-  response.cookies.set({
-    name: ACCESS_TOKEN_COOKIE,
+  const cookieOptions = {
     value: '',
     expires: new Date(0),
+    maxAge: 0, // Add maxAge=0 for immediate expiration
     path: '/',
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
-  response.cookies.set({
-    name: TOKEN_EXPIRY_COOKIE,
-    value: '',
-    expires: new Date(0),
-    path: '/',
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
-  response.cookies.set({
-    name: REFRESH_TOKEN_COOKIE,
-    value: '',
-    expires: new Date(0),
-    path: '/',
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
-  response.cookies.set({
-    name: ID_TOKEN_COOKIE,
-    value: '',
-    expires: new Date(0),
-    path: '/',
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
+    sameSite: 'lax' as const,
+  };
+
+  // Clear all auth cookies using the same options they were set with
+  response.cookies.set(ACCESS_TOKEN_COOKIE, '', cookieOptions);
+  response.cookies.set(TOKEN_EXPIRY_COOKIE, '', cookieOptions);
+  response.cookies.set(REFRESH_TOKEN_COOKIE, '', cookieOptions);
+  response.cookies.set(ID_TOKEN_COOKIE, '', cookieOptions);
+
+  // Also clear any session cookies that might be present
+  response.cookies.set('session', '', cookieOptions);
+  response.cookies.set('session.sig', '', cookieOptions);
+
   console.log('All authentication cookies cleared');
 }

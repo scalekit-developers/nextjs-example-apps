@@ -55,8 +55,6 @@ async function getAuthUrl(
       prompt?: string;
     } = {
       scopes: ['offline_access', 'openid', 'profile', 'email'],
-      // Force login prompt to prevent automatic re-authentication
-      prompt: 'login',
     };
 
     console.log('Generating authorization URL with options:', {

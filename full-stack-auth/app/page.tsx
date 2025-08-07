@@ -18,9 +18,9 @@ export default function HomePage() {
         <div className="flex justify-center">
           <Link
             href="/profile"
-            className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-black text-white shadow hover:bg-black/90 h-9 px-4 py-2"
           >
-            View Profile
+            Try the Demo Now →
           </Link>
         </div>
       </div>
