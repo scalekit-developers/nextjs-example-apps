@@ -39,14 +39,19 @@ export async function POST(request: NextRequest) {
       userData
     );
 
+    // Guard against unexpected undefined and return only known properties
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Failed to create user' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
-        firstName: user.givenName,
-        lastName: user.familyName,
       },
       message: 'User invited successfully',
     });

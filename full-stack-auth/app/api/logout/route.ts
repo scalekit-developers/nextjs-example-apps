@@ -8,22 +8,24 @@ import {
 import scalekit from '@/app/lib/scalekit';
 
 export async function GET(request: NextRequest) {
+  // Prevent accidental double-trigger by ignoring prefetch HEAD requests
+  if (request.method === 'HEAD') {
+    return NextResponse.next();
+  }
+
   const idToken = request.cookies.get(ID_TOKEN_COOKIE)?.value || '';
 
   try {
     // Use ScaleKit SDK to generate logout URL with proper session termination
     const logoutUrl = await scalekit.getLogoutUrl({
-      idTokenHint: idToken,
-      postLogoutRedirectUri: 'http://localhost:3000/', // Redirect back to home after ScaleKit logout
+      idTokenHint: idToken || undefined,
+      postLogoutRedirectUri: 'http://localhost:3000/',
+      state: 'home',
     });
 
-    // Redirect to ScaleKit logout endpoint to invalidate their session
-    const scalekitResponse = NextResponse.redirect(logoutUrl);
-
-    // Ensure cookies are cleared on this response too
-    clearAllAuthCookies(scalekitResponse);
-
-    return scalekitResponse;
+    // Redirect to ScaleKit logout endpoint to invalidate session.
+    // DO NOT clear cookies before redirect URL is returned to the browser; clear on the next request.
+    return NextResponse.redirect(logoutUrl);
   } catch {
     // Fallback to local logout only
   }

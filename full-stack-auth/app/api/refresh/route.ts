@@ -72,16 +72,20 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Preserve the ID token if we have one (it doesn't change during refresh)
-    if (idToken) {
+    // Update or preserve the ID token
+    // If the token endpoint returns a new id_token, use it; otherwise keep existing
+    const newIdToken = (tokenResponse as any).id_token as string | undefined;
+    const idTokenToSet = newIdToken || idToken;
+    if (idTokenToSet) {
+      const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       response.cookies.set({
         name: ID_TOKEN_COOKIE,
-        value: idToken,
+        value: idTokenToSet,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        expires: new Date(expiryTime), // Use same expiry as access token
+        expires: thirtyDaysFromNow,
       });
     }
 

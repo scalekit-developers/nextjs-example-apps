@@ -15,13 +15,22 @@ export default function HomePage() {
           Next.js and an external authentication provider.
         </p>
 
-        <div className="flex justify-center">
-          <Link
-            href="/profile"
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-black text-white shadow hover:bg-black/90 h-9 px-4 py-2"
-          >
-            Try the Demo Now →
-          </Link>
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-gray-700">Try the Demo Now →</p>
+          <div className="flex gap-3">
+            <Link
+              href="/api/auth?intent=signup"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-black text-white shadow hover:bg-black/90 h-9 px-4 py-2"
+            >
+              Sign up
+            </Link>
+            <Link
+              href="/api/auth?intent=login"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-gray-300 text-gray-900 bg-white hover:bg-gray-50 h-9 px-4 py-2"
+            >
+              Log in
+            </Link>
+          </div>
         </div>
       </div>
     </div>

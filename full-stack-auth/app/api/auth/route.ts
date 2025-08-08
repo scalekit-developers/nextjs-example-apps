@@ -5,14 +5,25 @@ export async function GET(request: NextRequest) {
   try {
     // Get the redirect URL from the query parameters
     const searchParams = request.nextUrl.searchParams;
-    const redirectAfterAuth = searchParams.get('redirect') || '/profile';
+    const intentParam = searchParams.get('intent');
+    const intent: 'login' | 'signup' | undefined =
+      intentParam === 'login' || intentParam === 'signup'
+        ? intentParam
+        : undefined;
+    const redirectAfterAuth =
+      searchParams.get('redirect') || (intent === 'signup' ? '/' : '/profile');
     const connectionId = searchParams.get('connectionId'); // Optional connection ID
     const organizationId = searchParams.get('organizationId'); // Optional organization ID
 
     // Encode the redirect URL to use as state parameter
     const state = encodeURIComponent(redirectAfterAuth);
 
-    const authUrl = await getAuthUrl(state, connectionId, organizationId);
+    const authUrl = await getAuthUrl(
+      state,
+      connectionId,
+      organizationId,
+      intent
+    );
 
     // If we have an auth URL, redirect to it
     if (authUrl) {
@@ -40,7 +51,8 @@ export async function GET(request: NextRequest) {
 async function getAuthUrl(
   state: string,
   connectionId?: string | null,
-  organizationId?: string | null
+  organizationId?: string | null,
+  intent?: 'login' | 'signup'
 ) {
   try {
     const redirectUri = 'http://localhost:3000/api/callback';
@@ -60,6 +72,11 @@ async function getAuthUrl(
       organizationId: organizationId || undefined,
       responseType: 'code', // Explicitly request authorization code flow
     };
+
+    // For signup intent, request the provider to render account creation UI
+    if (intent === 'signup') {
+      authOptions.prompt = 'create';
+    }
 
     // Use the Scalekit SDK to generate the authorization URL
     const authUrl = await scalekit.getAuthorizationUrl(

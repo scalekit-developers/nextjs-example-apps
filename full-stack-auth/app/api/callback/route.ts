@@ -111,6 +111,8 @@ export async function GET(request: NextRequest) {
 
     // Store the id_token as a cookie if it exists
     if (finalIdToken) {
+      // Keep the ID token cookie longer so it's available for logout even after access token expires
+      const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       response.cookies.set({
         name: ID_TOKEN_COOKIE,
         value: finalIdToken,
@@ -118,8 +120,7 @@ export async function GET(request: NextRequest) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        // Use the same expiration as the access token
-        expires: new Date(expiryTime),
+        expires: thirtyDaysFromNow,
       });
     }
 
