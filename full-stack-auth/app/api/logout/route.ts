@@ -10,13 +10,6 @@ import scalekit from '@/app/lib/scalekit';
 export async function GET(request: NextRequest) {
   const idToken = request.cookies.get(ID_TOKEN_COOKIE)?.value || '';
 
-  // ID token is required for proper logout - if missing, just clear cookies and redirect
-  if (!idToken) {
-    const response = NextResponse.redirect(new URL('/', request.url));
-    clearAllAuthCookies(response);
-    return response;
-  }
-
   try {
     // Use ScaleKit SDK to generate logout URL with proper session termination
     const logoutUrl = await scalekit.getLogoutUrl({
