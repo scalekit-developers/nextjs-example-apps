@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ACCESS_TOKEN_COOKIE, TOKEN_EXPIRY_COOKIE } from '../callback/route';
+import {
+  ACCESS_TOKEN_COOKIE,
+  TOKEN_EXPIRY_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+  ID_TOKEN_COOKIE,
+} from '@/app/lib/constants';
 import { jwtDecode } from 'jwt-decode';
 
-// Add this constant
-const REFRESH_TOKEN_COOKIE = 'auth_refresh_token';
+export interface OAuthTokenResponse {
+  access_token: string;
+  token_type?: string;
+  expires_in?: number;
+  scope?: string;
+  refresh_token?: string;
+  id_token?: string;
+  [key: string]: unknown;
+}
 
 export async function GET(request: NextRequest) {
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+  const idToken = request.cookies.get(ID_TOKEN_COOKIE)?.value;
   const redirectPath =
     request.nextUrl.searchParams.get('redirect') || '/profile';
 
@@ -69,6 +82,23 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Update or preserve the ID token
+    // If the token endpoint returns a new id_token, use it; otherwise keep existing
+    const newIdToken = tokenResponse.id_token;
+    const idTokenToSet = newIdToken || idToken;
+    if (idTokenToSet) {
+      const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      response.cookies.set({
+        name: ID_TOKEN_COOKIE,
+        value: idTokenToSet,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        expires: thirtyDaysFromNow,
+      });
+    }
+
     return response;
   } catch (error) {
     console.error('Error refreshing token:', error);
@@ -80,7 +110,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function refreshAccessToken(refreshToken: string) {
+async function refreshAccessToken(
+  refreshToken: string
+): Promise<OAuthTokenResponse | null> {
   const url = `${process.env.SCALEKIT_ENVIRONMENT_URL}/oauth/token`;
 
   const params = new URLSearchParams({
@@ -103,7 +135,7 @@ async function refreshAccessToken(refreshToken: string) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    return (await response.json()) as OAuthTokenResponse;
   } catch (error) {
     console.error('Error refreshing token:', error);
     return null;

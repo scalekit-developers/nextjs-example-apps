@@ -2,51 +2,91 @@ import { NextRequest, NextResponse } from 'next/server';
 import scalekit from '@/app/lib/scalekit';
 
 export async function GET(request: NextRequest) {
-  // Get the redirect URL from the query parameters
-  const searchParams = request.nextUrl.searchParams;
-  const redirectAfterAuth = searchParams.get('redirect') || '/profile';
+  try {
+    // Get the redirect URL from the query parameters
+    const searchParams = request.nextUrl.searchParams;
+    const intentParam = searchParams.get('intent');
+    const intent: 'login' | 'signup' | undefined =
+      intentParam === 'login' || intentParam === 'signup'
+        ? intentParam
+        : undefined;
+    const redirectAfterAuth =
+      searchParams.get('redirect') || (intent === 'signup' ? '/' : '/profile');
+    const connectionId = searchParams.get('connectionId'); // Optional connection ID
+    const organizationId = searchParams.get('organizationId'); // Optional organization ID
 
-  // Encode the redirect URL to use as state parameter
-  const state = encodeURIComponent(redirectAfterAuth);
+    // Encode the redirect URL to use as state parameter
+    const state = encodeURIComponent(redirectAfterAuth);
 
-  const authUrl = await getAuthUrl(state);
+    const authUrl = await getAuthUrl(
+      state,
+      connectionId,
+      organizationId,
+      intent
+    );
 
-  // If we have an auth URL, redirect to it
-  if (authUrl) {
-    return NextResponse.redirect(authUrl);
+    // If we have an auth URL, redirect to it
+    if (authUrl) {
+      return NextResponse.redirect(authUrl);
+    }
+
+    // If we don't have an auth URL, return an error
+    return NextResponse.json(
+      {
+        error: 'Failed to generate authentication URL',
+      },
+      { status: 500 }
+    );
+  } catch (error) {
+    console.error('Error in auth route:', error);
+    return NextResponse.json(
+      {
+        error: 'Internal server error during authentication',
+      },
+      { status: 500 }
+    );
   }
-
-  // If we don't have an auth URL, return an error
-  return NextResponse.json(
-    {
-      error: 'Failed to generate authentication URL',
-    },
-    { status: 500 }
-  );
 }
 
-async function getAuthUrl(state: string) {
+async function getAuthUrl(
+  state: string,
+  connectionId?: string | null,
+  organizationId?: string | null,
+  intent?: 'login' | 'signup'
+) {
   try {
     const redirectUri = 'http://localhost:3000/api/callback';
 
-    // Ensure we're requesting openid scope to get the ID token
-    // The ScaleKit SDK should add the necessary parameters based on these scopes
-    const authUrl = await scalekit.getAuthorizationUrl(redirectUri, {
-      // connectionId: 'conn_59615204090052747',
+    // Build the authorization options based on the Scalekit SDK documentation
+    const authOptions: {
+      scopes: string[];
+      state?: string;
+      connectionId?: string;
+      organizationId?: string;
+      prompt?: string;
+      responseType?: string;
+    } = {
       scopes: ['offline_access', 'openid', 'profile', 'email'],
       state,
-    });
+      connectionId: connectionId || undefined,
+      organizationId: organizationId || undefined,
+      responseType: 'code', // Explicitly request authorization code flow
+    };
 
-    console.log('Generated auth URL with scopes:', [
-      'offline_access',
-      'openid',
-      'profile',
-      'email',
-    ]);
+    // For signup intent, request the provider to render account creation UI
+    if (intent === 'signup') {
+      authOptions.prompt = 'create';
+    }
+
+    // Use the Scalekit SDK to generate the authorization URL
+    const authUrl = await scalekit.getAuthorizationUrl(
+      redirectUri,
+      authOptions
+    );
 
     return authUrl;
   } catch (error) {
-    console.error('Error at getAuthUrl:', error);
+    console.error('Error generating authorization URL:', error);
     return null;
   }
 }
