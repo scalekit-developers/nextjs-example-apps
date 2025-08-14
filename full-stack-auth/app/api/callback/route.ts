@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 // import scalekit from '@/app/lib/scalekit';
 import { jwtDecode } from 'jwt-decode';
+import {
+  ACCESS_TOKEN_COOKIE,
+  ID_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+  TOKEN_EXPIRY_COOKIE,
+} from '@/app/lib/constants';
 
 const redirectUri = 'http://localhost:3000/api/callback';
-
-// Cookie name for the access token
-export const ACCESS_TOKEN_COOKIE = 'auth_access_token';
-// Cookie name for the token expiration
-export const TOKEN_EXPIRY_COOKIE = 'auth_token_expiry';
-// Cookie name for the refresh token
-export const REFRESH_TOKEN_COOKIE = 'auth_refresh_token';
-// Cookie name for the id token
-export const ID_TOKEN_COOKIE = 'auth_id_token';
 
 export async function GET(request: NextRequest) {
   // Instead of parsing body, get data from URL parameters

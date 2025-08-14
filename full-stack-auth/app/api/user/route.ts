@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ACCESS_TOKEN_COOKIE } from '../callback/route';
+import { ACCESS_TOKEN_COOKIE } from '../../lib/constants';
 
 export async function GET(request: NextRequest) {
   // Get the access token from cookies

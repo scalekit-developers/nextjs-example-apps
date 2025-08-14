@@ -1,8 +1,8 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 
-export default function LoginPage() {
+function LoginRedirect() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/profile';
@@ -13,11 +13,19 @@ export default function LoginPage() {
   }, [router, redirect]);
 
   return (
+    <div className="p-8 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-4">Redirecting to login...</h1>
+      <p>Please wait while we redirect you to the login page.</p>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="p-8 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold mb-4">Redirecting to login...</h1>
-        <p>Please wait while we redirect you to the login page.</p>
-      </div>
+      <Suspense fallback={<div>Loading...</div>}>
+        <LoginRedirect />
+      </Suspense>
     </div>
   );
 }

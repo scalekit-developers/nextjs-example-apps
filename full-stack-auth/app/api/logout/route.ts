@@ -4,7 +4,7 @@ import {
   ID_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
   TOKEN_EXPIRY_COOKIE,
-} from '../callback/route';
+} from '../../lib/constants';
 
 export async function GET(request: NextRequest) {
   const idToken = request.cookies.get(ID_TOKEN_COOKIE)?.value || '';
